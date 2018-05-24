@@ -30,28 +30,20 @@ class planewave:
     
 
     def __init__ (self, k, E):
-        #add code to make sure that k and E are orthogonal - orthogonalize them (do it such that k is the same)
-        self.k = k
-        self.E = E
         
-def planewaveinit (k, E, lambd, A, x, y, z):
-    kHat = k / np.linalg.norm(k)
-    kVec = kHat * 2 * np.pi / lambd
-    
-    s = np.cross(kHat, E)
-    EHat = s / np.linalg.norm(s)
-    E0 = np.cross(EHat, kVec)
-    
-    rVec = (x, y, z)
-    phi = np.dot(kVec, rVec)
+#        k = k / np.linalg.norm(k)           #normalize k vector
+        if np.abs(np.dot(E, k)) < 1e-15:    #if E and k vector is orthogonal
+            self.k = k                      
+            self.E = E                      #set their value
+        else:                               #if they are not orthogonal
+            s = np.cross(k, E)              #compute an orthogonal side vector
+            s = s / np.linalg.norm(s)       #normalize it
+            E = np.cross(s, k)              #compute new E vector which is orthogonal
+            self.k = k
+            self.E = E
 
-    Ep = A * E0 * np.exp(1j * phi)
-    
-    return Ep
-    
-#def evaluate(self):
-l = 1                                      #specify the wavelength
-kDir = np.array([0, 1, 0.5])                  #specify the k-vector direction
+l = 4                                      #specify the wavelength
+kDir = np.array([0, 0, 1])                  #specify the k-vector direction
 kDir = kDir / np.linalg.norm(kDir)
 E = np.array([1, 0, 0])                     #specify the E vector
 
@@ -64,11 +56,10 @@ N = 400                                      #size of the image to evaluate
 
 
 c = np.linspace(-10, 10, N)
-x = y = z = np.arange(-10,10,0.5)
 [Y, Z] = np.meshgrid(c, c)
 X = np.zeros(Y.shape)
 
 Ep = p.evaluate(X, Y, Z)
 
 
-plt.imshow(np.imag(Ep[0, :, :]))
+plt.imshow(np.real(Ep[0, :, :]))
