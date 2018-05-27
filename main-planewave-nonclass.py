@@ -21,16 +21,8 @@ class planewave:
     #   try to enforce that E and k have to be orthogonal
     
     #initialization function that sets these parameters when a plane wave is created
-    
-    #function that renders the plane wave given a set of coordinates
-    def evaluate(self, X, Y, Z):
-        k_dot_r = self.k[0] * X + self.k[1] * Y + self.k[2] * Z
-        ex = np.exp(1j * k_dot_r)
-        return self.E.reshape((3, 1, 1)) * ex
-    
-
     def __init__ (self, k, E):
-        
+    
 #        k = k / np.linalg.norm(k)           #normalize k vector
         if np.abs(np.dot(E, k)) < 1e-15:    #if E and k vector is orthogonal
             self.k = k                      
@@ -41,6 +33,12 @@ class planewave:
             E = np.cross(s, k)              #compute new E vector which is orthogonal
             self.k = k
             self.E = E
+    
+    #function that renders the plane wave given a set of coordinates
+    def evaluate(self, X, Y, Z):
+        k_dot_r = self.k[0] * X + self.k[1] * Y + self.k[2] * Z     #phase term k*r
+        ex = np.exp(1j * k_dot_r)       #E field equation  = E0 * exp (i * (k * r))
+        return self.E.reshape((3, 1, 1)) * ex
 
 l = 4                                      #specify the wavelength
 kDir = np.array([0, 0, 1])                  #specify the k-vector direction
