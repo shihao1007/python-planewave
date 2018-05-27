@@ -114,6 +114,7 @@ class planewave():
             
         if (tir == True):
             ##handle total internal reflection here
+            ##??? does evanescent wave matter?
         
         if (theta_i == 0):              #when the plane wave hits the interface head-on, s-components of the plane wave will be the same
             rp = (1 - nr) / (1 + nr)    #due to boundry conditions, so in this case we only compute rp and tp
@@ -123,7 +124,7 @@ class planewave():
             Er = self.E * rp
             Et = self.E * tp
             phase_r = np.dot(P.P, self.k - kr)  #compute the phase offset
-            phase_t = np.dot(P.P, self.k - kt)  #???
+            phase_t = np.dot(P.P, self.k - kt)  #??? what is phase offser?
             
             R = planewave(kr, Er, phase_r)
             T = planewave(kt, Et, phase_t)
