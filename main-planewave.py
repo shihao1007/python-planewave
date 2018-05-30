@@ -13,9 +13,9 @@ from matplotlib import pyplot as plt
 class plane:
     #define the interface to which the plane wave is hitting
     
-    def __init__ (self, P, N, U, nr):
+    def __init__ (self, O, N, U, nr):
         #define a plane through a point, a normal vector and an arbitary vector on the plane
-        self.P = P          #P is the query point, on origin
+        self.O = O          #P is the query point, on origin
         self.N = N          #N is the normal vector, perpendicular to the plane
         self.U = U          #U is an arbitary vector lies on the plane
         self.nr = nr        #relative refractive index between the 2 sides of the plane
@@ -33,7 +33,7 @@ class plane:
             return 0
     
     def side(self, p):                      #determine which side of plane point p lies
-        rv = p - self.P                     #get the vector from query point P to point p
+        rv = p - self.O                     #get the vector from query point P to point p
         return self.face(rv)
     
     def perpendicular(self, v):             #calculate the component of v that is perpendicular to the plane
@@ -82,7 +82,7 @@ class planewave():
         return self.E.reshape((3, 1, 1)) * ex
     
     #calculate the result of a plane wave hitting an interface between 2 refractive indices
-    def singleSurface(self, P, R, T):
+    def singleSurface(self, P):
         
         facing = P.face(self.k)             #determine which direction the plane wave is coming in, -1(same as normal), 1(oppo), 0(in the plane)
         
@@ -123,45 +123,47 @@ class planewave():
             Er = self.E * rp
             Et = self.E * tp
             
-        if (tir == True):
-            ##handle total internal reflection here
-            #will just be reflection, add evanescent wave later
-            ininner = (sin_theta_i / P.nr ) ** 2 - 1 + 0j
-            inner_s = P.nr / cos_theta_i * np.sqrt(ininner)
-            rs = np.exp( -2 * 1j * math.atan(inner_s))
-            ts = 0
-            
-            inner_p = 1 / (P.nr * cos_theta_i) * np.sqrt(ininner)
-            rp = np.exp( -2 * 1j * math.atan(inner_p))
-            tp = 0
-            
-            kr = ( yHat * sin_theta_i - zHat * cos_theta_i) * np.linalg.norm(self.k)
-            kt = 0
-            
         else:
-            ##handle normal situation from here
-            rs = np.sin(theta_t - theta_i) / np.sin(theta_t + theta_i)
-            rp = np.tan(theta_t - theta_i) / np.tan(theta_t + theta_i)
             
-            tp = ( 2 * sin_theta_t * cos_theta_i ) / ( np.sin(theta_t + theta_i) * np.cos(theta_t - theta_i))
-            ts = ( 2 * sin_theta_t * cos_theta_i ) / ( np.sin(theta_t + theta_i))
+            if (tir == True):
+                ##handle total internal reflection here
+                #will just be reflection, add evanescent wave later
+                ininner = (sin_theta_i / P.nr ) ** 2 - 1 + 0j
+                inner_s = P.nr / cos_theta_i * np.sqrt(ininner)
+                rs = np.exp( -2 * 1j * math.atan(inner_s))
+                ts = 0
+                
+                inner_p = 1 / (P.nr * cos_theta_i) * np.sqrt(ininner)
+                rp = np.exp( -2 * 1j * math.atan(inner_p))
+                tp = 0
+                
+                kr = ( yHat * sin_theta_i - zHat * cos_theta_i) * np.linalg.norm(self.k)
+                kt = 0
+                
+            else:
+                ##handle normal situation from here
+                rs = np.sin(theta_t - theta_i) / np.sin(theta_t + theta_i)
+                rp = np.tan(theta_t - theta_i) / np.tan(theta_t + theta_i)
+                
+                tp = ( 2 * sin_theta_t * cos_theta_i ) / ( np.sin(theta_t + theta_i) * np.cos(theta_t - theta_i))
+                ts = ( 2 * sin_theta_t * cos_theta_i ) / ( np.sin(theta_t + theta_i))
+                
+                kr = ( yHat * sin_theta_i - zHat * cos_theta_i) * np.linalg.norm(self.k)
+                kt = ( yHat * sin_theta_i + zHat * cos_theta_i) * np.linalg.norm(self.k) * P.nr
+                
+            Er_s = Ei_s * rs
+            Er_p = Ei_p * rp
+            Et_s = Ei_s * ts
+            Et_p = Ei_p * tp
             
-            kr = ( yHat * sin_theta_i - zHat * cos_theta_i) * np.linalg.norm(self.k)
-            kt = ( yHat * sin_theta_i + zHat * cos_theta_i) * np.linalg.norm(self.k) * P.nr
+            Er = (yHat * cos_theta_i + zHat * sin_theta_i) * Er_p +cxHat * Er_s
+            Et = (yHat * cos_theta_t - zHat * sin_theta_t) * Et_p +cxHat * Et_s
             
-        Er_s = Ei_s * rs
-        Er_p = Ei_p * rp
-        Et_s = Ei_s * ts
-        Et_p = Ei_p * tp
+        phase_r = np.dot(P.O, self.k - kr)  #compute the phase offset
+        phase_t = np.dot(P.O, self.k - kt)  #??? what is phase offset?
         
-        Er = (yHat * cos_theta_i + zHat * sin_theta_i) * Er_p +cxHat * Er_s
-        Et = (yHat * cos_theta_t - zHat * sin_theta_t) * Et_p +cxHat * Et_s
-            
-        phase_r = np.dot(P.P, self.k - kr)  #compute the phase offset
-        phase_t = np.dot(P.P, self.k - kt)  #??? what is phase offset?
-        
-        R = planewave(kr, Er, phase_r)
-        T = planewave(kt, Et, phase_t)
+        self.R = planewave(kr, Er, phase_r)
+        self.T = planewave(kt, Et, phase_t)
         
 
 # set plane wave attributes
@@ -172,7 +174,7 @@ E = np.array([1, 0, 0])                      #specify the E vector
 phi = 0
 
 # set plane attributes
-P = np.array([0, 0, 0])                     #specify the P point
+O = np.array([0, 0, 0])                     #specify the P point
 N = np.array([0, 0, 1])                     #specify the normal vector
 U = np.array([1, 0, 0])                     #specify U vector
 nr = 1.5                                    #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
@@ -180,21 +182,30 @@ nr = 1.5                                    #nr = nt / ni (n0 is the source mate
 
 k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
 
-P = plane(P, N, U, nr)
+P = plane(O, N, U, nr)
 Ef = planewave(k, E, phi)                           #create a plane wave
-R = planewave(k, E, phi)                            #initialize reflected plane wave
-T = planewave(k, E, phi)                            #initialize transmitted plane wave
-Ef.singleSurface(P, R, T)
-
-N = 400                                      #size of the image to evaluate
-
-
-c = np.linspace(-10, 10, N)
-[Y, Z] = np.meshgrid(c, c)
-X = np.zeros(Y.shape)
-
-Ep = R.evaluate(X, Y, Z)
+#R = planewave(k, E, phi)                            #initialize reflected plane wave
+#T = planewave(k, E, phi)                            #initialize transmitted plane wave
+Ef.singleSurface(P)
 
 
 
+N = 200                                      #size of the image to evaluate
+
+
+cm = np.linspace(-10, 0, N)
+cp = np.linspace(0, 10, N)
+[Xt, Zt] = np.meshgrid(cm, cm)
+[Xi, Zi] = np.meshgrid(cp, cp)
+Yi = np.zeros(Zi.shape)
+Yt = np.zeros(Zt.shape)
+
+Epi = Ef.evaluate(Xi, Yi, Zi) + Ef.R.evaluate(Xi, Yi, Zi)
+Ept = Ef.T.evaluate(Xt, Yt, Zt)
+Ep = np.concatenate((Ept, Epi), axis = 1)
+
+Er = Ef.R.evaluate(Xi, Yi, Zi)
+fig = plt.figure()
 plt.imshow(np.real(Ep[0, :, :]))
+#plt.imshow(np.real(Ept[0, :, :]))
+
