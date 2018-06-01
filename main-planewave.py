@@ -75,6 +75,9 @@ class planewave():
             self.k = k
             self.E = E
     
+    def __str__(self):
+        return str(self.k) + "\n" + str(self.E)     #for verify field vectors use print command
+
     #function that renders the plane wave given a set of coordinates
     def evaluate(self, X, Y, Z):
         k_dot_r = self.k[0] * X + self.k[1] * Y + self.k[2] * Z     #phase term k*r
@@ -169,7 +172,7 @@ class planewave():
 
 # set plane wave attributes
 l = 4                                        #specify the wavelength
-kDir = np.array([0, 0, -1])                   #specify the k-vector direction
+kDir = np.array([0, 0, 1])                   #specify the k-vector direction
 kDir = kDir / np.linalg.norm(kDir)
 E = np.array([1, 0, 0])                      #specify the E vector
 phi = 0
@@ -185,25 +188,27 @@ k = kDir * 2 * np.pi / l                 #calculate the k-vector from k directio
 
 P = plane(O, N, U, nr)
 Ef = planewave(k, E, phi)                           #create a plane wave
-#R = planewave(k, E, phi)                            #initialize reflected plane wave
-#T = planewave(k, E, phi)                            #initialize transmitted plane wave
 Ef.singleSurface(P)                                 #send the plane wave through a single interface
 
-N = 200                                      #size of the image to evaluate
+N = 400                                      #size of the image to evaluate
 
-cm = np.linspace(-10, 0, N)
-cp = np.linspace(0, 10, N)
-[Yt, Zt] = np.meshgrid(cp, cp)
-[Yi, Zi] = np.meshgrid(cm, cm)
-Xi = np.zeros(Zi.shape)
-Xt = np.zeros(Zt.shape)
+#create mesh grid
+c = np.linspace(-10, 10, N)
+[Y, Z] = np.meshgrid(c, c)
+X = np.zeros(Z.shape)
 
-Epi = Ef.evaluate(Xi, Yi, Zi) + Ef.R.evaluate(Xi, Yi, Zi)       #field in incidental side
-Ept = Ef.T.evaluate(Xt, Yt, Zt)                                 #filed in transmitted side
-Ep = np.concatenate((Epi, Ept), axis = 1)
+#create mask for incidental field and transmitted field
+mask_in = np.zeros(Z.shape)
+mask_tr = np.zeros(Z.shape)
+mask_in[0:200] = 1
+mask_tr[200:400] = 1 
 
-Er = Ef.R.evaluate(Xi, Yi, Zi)
+#Electric field of a plane wave
+Epi = (Ef.evaluate(X, Y, Z) + Ef.R.evaluate(X, Y, Z)) * mask_in       #field in incidental side
+Ept = Ef.T.evaluate(X, Y, Z) * mask_tr                              #filed in transmitted side
+Ep = Epi + Ept
+
+#plot the field
 fig = plt.figure()
 plt.imshow(np.real(Ep[0, :, :]))
-#plt.imshow(np.real(Ept[0, :, :]))
 
