@@ -77,12 +77,12 @@ class planewave():
         return str(self.k) + "\n" + str(self.E)     #for verify field vectors use print command
 
     #function that renders the plane wave given a set of coordinates
-    def evaluate(self, X, Y, Z):
+    def evaluate(self, X, Y, Z, n):
         k_dot_r = np.real(self.k[0]) * X + np.real(self.k[1]) * Y + np.real(self.k[2]) * Z     #phase term k*r
-        k_dot_d = np.imag(self.k[2]) * Z
-        ex = np.exp(1j * k_dot_r) * np.exp(self.phi) / np.exp(k_dot_d)       #E field equation  = E0 * exp (i * (k * r)) here we simply set amplitude as 1
+        k_dot_d = np.imag(n) * self.k[2] * Z                #decay scalar term k * d
+        ex = np.exp(1j * k_dot_r) * np.exp(self.phi)       #E field equation  = E0 * exp (i * (k * r)) here we simply set amplitude as 1
         Ef = self.E.reshape((3, 1, 1)) * ex
-        decay = np.exp( - k_dot_d)
+        decay = np.exp( - k_dot_d)                          #decay mask
         return [Ef, decay]
     
 #calculate the result of a plane wave hitting an interface between 2 refractive indices
@@ -154,7 +154,7 @@ def singleSurface(pw, P):
             ts = ( 2 * sin_theta_t * cos_theta_i ) / ( np.sin(theta_t + theta_i))
             
             kr = ( yHat * sin_theta_i - zHat * cos_theta_i) * np.linalg.norm(pw.k)
-            kt = ( yHat * sin_theta_t + zHat * cos_theta_t) * np.linalg.norm(pw.k) * P.nr
+            kt = ( yHat * sin_theta_t + zHat * cos_theta_t) * np.linalg.norm(pw.k) * np.real(P.nr)
             
         Er_s = Ei_s * rs        #compute s and p components for reflected and transmitted fields
         Er_p = Ei_p * rp
@@ -183,15 +183,15 @@ phi = 0
 O = np.array([0, 0, 0])                     #specify the P point
 N = np.array([0, 0, 1])                     #specify the normal vector
 U = np.array([1, 0, 0])                     #specify U vector
-n = 1.90 - 0.3j                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
-                                            #if nr > 1, no TIR, if nr < 1, TIR might happen
+n = 1.90 - 0.7j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
+                                            #if n > 1, no TIR, if n < 1, TIR might happen
+                                            #always assuming the incidental ni = 1
 
 k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
 
 P = plane(O, N, U, n)
 Ef = planewave(k, E, phi)                           #create a plane wave
 [Er, Et] = singleSurface(Ef, P)                                 #send the plane wave through a single interface
-#Et.k = Et.k - Et.k * 0.1j
 
 N = 1001                                      #size of the image to evaluate
 
@@ -208,12 +208,12 @@ mask_tr[int(N/2):N] = 1
 
 #Electric field of a plane wave
 #Epi = (Ef.evaluate(X, Y, Z) + Er.evaluate(X, Y, Z)) * mask_in       #field in incidental side
-[Fi, decayi] = Ef.evaluate(X, Y, Z)
-[Ft, decayt] = Et.evaluate(X, Y, Z)
-[Fr, decayr] = Er.evaluate(X, Y, Z)                             #filed in transmitted side
-Fp = (Fi + Fr) * mask_in + Ft * mask_tr
+[Fi, decayi] = Ef.evaluate(X, Y, Z, n)
+[Ft, decayt] = Et.evaluate(X, Y, Z, n)
+[Fr, decayr] = Er.evaluate(X, Y, Z, n)                             #filed in transmitted side
+Fp = (Fi + Fr) * mask_in + Ft * decayt * mask_tr
 
-#plt.imshow(decayr* mask_tr)
+#plt.imshow(decayt* mask_tr)
 #plot the field
 #fig = plt.figure()
 plt.imshow(np.real(Fp[0, :, :]))
