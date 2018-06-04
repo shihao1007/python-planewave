@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Mon Jun  4 11:02:03 2018
+
+@author: shihao
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Sat May 26 15:26:59 2018
 
 @author: shihao
@@ -64,9 +71,11 @@ class planewave():
         self.phi = phi
         self.k = k                      
         self.E = E
-        
-        if ( np.linalg.norm(k) != 0 and np.linalg.norm(E) != 0):
-            #force E and k to be orthogonal
+#        k = k / np.linalg.norm(k)           #normalize k vector
+        if np.abs(np.dot(E, k)) < 1e-15:    #if E and k vector is orthogonal
+            self.k = k                      
+            self.E = E                      #set their value
+        else:                               #if they are not orthogonal
             s = np.cross(k, E)              #compute an orthogonal side vector
             s = s / np.linalg.norm(s)       #normalize it
             E = np.cross(s, k)              #compute new E vector which is orthogonal
@@ -140,7 +149,7 @@ class planewave():
                 tp = 0
                 
                 kr = ( yHat * sin_theta_i - zHat * cos_theta_i) * np.linalg.norm(self.k)  #compute kr
-                kt = ( yHat * sin_theta_i - zHat * cos_theta_i) * 0
+                kt = 0
                 
             else:
                 ##handle normal situation from here
@@ -167,10 +176,37 @@ class planewave():
         self.R = planewave(kr, Er, phase_r)         #return the reflected and transmitted field
         self.T = planewave(kt, Et, phase_t)
         
+        
+    #calculate the result of a plane wave hitting 2 interfaces consequently
+    #   P1 the first interface
+    #   P2 the second interface
+    #   d the distance between two interfaces
+    #   theta_0 is the incident angle of P1
+    #   theta_1 is the refraction angle of P1 and incident angle of P2
+    #   theta_2 is the refraction angle of P2
+    def twoSurfaces(self, P1, P2, d):
+        
+        
+        #calculate angles of P1 interface
+        cos_theta_0 = np.dot(self.k, -P1.N) / (np.linalg.norm(self.k) * np.linalg.norm(P1.N))
+        theta_0 = math.acos(cos_theta_0)
+        sin_theta_0 = np.sin(theta_0)
+        sin_theta_1 = 1 / P1.nr * sin_theta_0
+        cos_theta_1 = np.sqrt( 1 - sin_theta_1 ** 2)
+        
+        #calculate angles of P2 interface
+        sin_theta_2 = 1 / P2.nr * sin_theta_1
+        cos_theta_2 = np.sqrt( 1 - sin_theta_2 ** 2)
+        
+        
+        
+        
+        
+         
 
 # set plane wave attributes
 l = 4                                        #specify the wavelength
-kDir = np.array([0, -1.5, -1])                   #specify the k-vector direction
+kDir = np.array([0, 0, 1])                   #specify the k-vector direction
 kDir = kDir / np.linalg.norm(kDir)
 E = np.array([1, 0, 0])                      #specify the E vector
 phi = 0
@@ -179,7 +215,7 @@ phi = 0
 O = np.array([0, 0, 0])                     #specify the P point
 N = np.array([0, 0, 1])                     #specify the normal vector
 U = np.array([1, 0, 0])                     #specify U vector
-nr = 0.8                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
+nr = 1.5                                    #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
                                             #if nr > 1, no TIR, if nr < 1, TIR might happen
 
 k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
