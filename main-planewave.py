@@ -65,13 +65,13 @@ class planewave():
         self.k = k                      
         self.E = E
         
+        #force E and k to be orthogonal
         if ( np.linalg.norm(k) > 1e-15 and np.linalg.norm(E) >1e-15):
-            #force E and k to be orthogonal
             s = np.cross(k, E)              #compute an orthogonal side vector
             s = s / np.linalg.norm(s)       #normalize it
-            E = np.cross(s, k)              #compute new E vector which is orthogonal
+            Edir = np.cross(s, k)              #compute new E vector which is orthogonal
             self.k = k
-            self.E = E
+            self.E = Edir / np.linalg.norm(Edir) * np.linalg.norm(E)
     
     def __str__(self):
         return str(self.k) + "\n" + str(self.E)     #for verify field vectors use print command
@@ -180,7 +180,7 @@ phi = 0
 O = np.array([0, 0, 0])                     #specify the P point
 N = np.array([0, 0, 1])                     #specify the normal vector
 U = np.array([1, 0, 0])                     #specify U vector
-nr = 1.00                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
+nr = 1.90                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
                                             #if nr > 1, no TIR, if nr < 1, TIR might happen
 
 k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
@@ -188,6 +188,7 @@ k = kDir * 2 * np.pi / l                 #calculate the k-vector from k directio
 P = plane(O, N, U, nr)
 Ef = planewave(k, E, phi)                           #create a plane wave
 [Er, Et] = singleSurface(Ef, P)                                 #send the plane wave through a single interface
+#Et.k = Et.k - Et.k * 0.1j
 
 N = 400                                      #size of the image to evaluate
 
@@ -203,11 +204,14 @@ mask_in[0:200] = 1
 mask_tr[200:400] = 1 
 
 #Electric field of a plane wave
-Epi = (Ef.evaluate(X, Y, Z) + Er.evaluate(X, Y, Z)) * mask_in       #field in incidental side
-Ept = Et.evaluate(X, Y, Z) * mask_tr                              #filed in transmitted side
-Ep = Epi + Ept
+#Epi = (Ef.evaluate(X, Y, Z) + Er.evaluate(X, Y, Z)) * mask_in       #field in incidental side
+Fi = Ef.evaluate(X, Y, Z)
+Ft = Et.evaluate(X, Y, Z)
+Fr = Er.evaluate(X, Y, Z)                             #filed in transmitted side
+Fp = (Fi + Fr) * mask_in + Ft * mask_tr
 
+#plt.imshow(np.abs(Fi[0, :, :]))
 #plot the field
-fig = plt.figure()
-plt.imshow(np.real(Ep[0, :, :]))
+#fig = plt.figure()
+plt.imshow(np.real(Fp[0, :, :]))
 
