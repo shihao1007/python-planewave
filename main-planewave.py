@@ -80,8 +80,10 @@ class planewave():
     def evaluate(self, X, Y, Z):
         k_dot_r = np.real(self.k[0]) * X + np.real(self.k[1]) * Y + np.real(self.k[2]) * Z     #phase term k*r
         k_dot_d = np.imag(self.k[2]) * Z
-        ex = np.exp(1j * k_dot_r) * np.exp(self.phi) * np.exp( - k_dot_d)       #E field equation  = E0 * exp (i * (k * r)) here we simply set amplitude as 1
-        return self.E.reshape((3, 1, 1)) * ex
+        ex = np.exp(1j * k_dot_r) * np.exp(self.phi) / np.exp(k_dot_d)       #E field equation  = E0 * exp (i * (k * r)) here we simply set amplitude as 1
+        Ef = self.E.reshape((3, 1, 1)) * ex
+        decay = np.exp( - k_dot_d)
+        return [Ef, decay]
     
 #calculate the result of a plane wave hitting an interface between 2 refractive indices
 def singleSurface(pw, P):
@@ -181,7 +183,7 @@ phi = 0
 O = np.array([0, 0, 0])                     #specify the P point
 N = np.array([0, 0, 1])                     #specify the normal vector
 U = np.array([1, 0, 0])                     #specify U vector
-n = 1.90 - 0.2j                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
+n = 1.90 - 0.3j                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
                                             #if nr > 1, no TIR, if nr < 1, TIR might happen
 
 k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
@@ -191,7 +193,7 @@ Ef = planewave(k, E, phi)                           #create a plane wave
 [Er, Et] = singleSurface(Ef, P)                                 #send the plane wave through a single interface
 #Et.k = Et.k - Et.k * 0.1j
 
-N = 1000                                      #size of the image to evaluate
+N = 1001                                      #size of the image to evaluate
 
 #create mesh grid
 c = np.linspace(-10, 10, N)
@@ -206,12 +208,12 @@ mask_tr[int(N/2):N] = 1
 
 #Electric field of a plane wave
 #Epi = (Ef.evaluate(X, Y, Z) + Er.evaluate(X, Y, Z)) * mask_in       #field in incidental side
-Fi = Ef.evaluate(X, Y, Z)
-Ft = Et.evaluate(X, Y, Z)
-Fr = Er.evaluate(X, Y, Z)                             #filed in transmitted side
+[Fi, decayi] = Ef.evaluate(X, Y, Z)
+[Ft, decayt] = Et.evaluate(X, Y, Z)
+[Fr, decayr] = Er.evaluate(X, Y, Z)                             #filed in transmitted side
 Fp = (Fi + Fr) * mask_in + Ft * mask_tr
 
-#plt.imshow(np.abs(Fi[0, :, :]))
+#plt.imshow(decayr* mask_tr)
 #plot the field
 #fig = plt.figure()
 plt.imshow(np.real(Fp[0, :, :]))
