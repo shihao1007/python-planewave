@@ -65,7 +65,7 @@ class planewave():
         self.k = k                      
         self.E = E
         
-        if ( np.linalg.norm(k) != 0 and np.linalg.norm(E) != 0):
+        if ( np.linalg.norm(k) > 1e-15 and np.linalg.norm(E) >1e-15):
             #force E and k to be orthogonal
             s = np.cross(k, E)              #compute an orthogonal side vector
             s = s / np.linalg.norm(s)       #normalize it
