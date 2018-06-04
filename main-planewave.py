@@ -181,17 +181,17 @@ phi = 0
 O = np.array([0, 0, 0])                     #specify the P point
 N = np.array([0, 0, 1])                     #specify the normal vector
 U = np.array([1, 0, 0])                     #specify U vector
-nr = 1.90 - 0.0j                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
+n = 1.90 - 0.2j                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
                                             #if nr > 1, no TIR, if nr < 1, TIR might happen
 
 k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
 
-P = plane(O, N, U, nr)
+P = plane(O, N, U, n)
 Ef = planewave(k, E, phi)                           #create a plane wave
 [Er, Et] = singleSurface(Ef, P)                                 #send the plane wave through a single interface
 #Et.k = Et.k - Et.k * 0.1j
 
-N = 400                                      #size of the image to evaluate
+N = 1000                                      #size of the image to evaluate
 
 #create mesh grid
 c = np.linspace(-10, 10, N)
@@ -201,8 +201,8 @@ X = np.zeros(Z.shape)
 #create mask for incidental field and transmitted field
 mask_in = np.zeros(Z.shape)
 mask_tr = np.zeros(Z.shape)
-mask_in[0:200] = 1
-mask_tr[200:400] = 1 
+mask_in[0:int(N/2)] = 1
+mask_tr[int(N/2):N] = 1 
 
 #Electric field of a plane wave
 #Epi = (Ef.evaluate(X, Y, Z) + Er.evaluate(X, Y, Z)) * mask_in       #field in incidental side
