@@ -78,8 +78,9 @@ class planewave():
 
     #function that renders the plane wave given a set of coordinates
     def evaluate(self, X, Y, Z):
-        k_dot_r = self.k[0] * X + self.k[1] * Y + self.k[2] * Z     #phase term k*r
-        ex = np.exp(1j * k_dot_r) * np.exp(self.phi)       #E field equation  = E0 * exp (i * (k * r)) here we simply set amplitude as 1
+        k_dot_r = np.real(self.k[0]) * X + np.real(self.k[1]) * Y + np.real(self.k[2]) * Z     #phase term k*r
+        k_dot_d = np.imag(self.k[2]) * Z
+        ex = np.exp(1j * k_dot_r) * np.exp(self.phi) * np.exp( - k_dot_d)       #E field equation  = E0 * exp (i * (k * r)) here we simply set amplitude as 1
         return self.E.reshape((3, 1, 1)) * ex
     
 #calculate the result of a plane wave hitting an interface between 2 refractive indices
@@ -94,7 +95,7 @@ def singleSurface(pw, P):
     cos_theta_i = np.dot(pw.k, -P.N) / (np.linalg.norm(pw.k) * np.linalg.norm(P.N))  #cos(theta) is the angle between kDir and opposite N
     theta_i = math.acos(cos_theta_i)
     sin_theta_i = np.sin(theta_i)
-    sin_theta_t = (1 / P.nr) * np.sin(theta_i)            #compute the sin of theta t using Snell's Law
+    sin_theta_t = (1 / np.real(P.nr)) * np.sin(theta_i)            #compute the sin of theta t using Snell's Law
 #        cos_theta_t = np.cos(math.asin(sin_theta_t))
     cos_theta_t = np.sqrt(1 - sin_theta_t**2)
     
@@ -180,7 +181,7 @@ phi = 0
 O = np.array([0, 0, 0])                     #specify the P point
 N = np.array([0, 0, 1])                     #specify the normal vector
 U = np.array([1, 0, 0])                     #specify U vector
-nr = 1.90                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
+nr = 1.90 - 0.0j                                   #nr = nt / ni (n0 is the source material(incidental), n0 is the material after the interface(transmitted))
                                             #if nr > 1, no TIR, if nr < 1, TIR might happen
 
 k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
