@@ -197,7 +197,7 @@ class planewave():
 
 # set plane wave attributes
 l = 4                                        #specify the wavelength
-kDir = np.array([0, -1, -1])                   #specify the k-vector direction
+kDir = np.array([0, -4, -1])                   #specify the k-vector direction
 kDir = kDir / np.linalg.norm(kDir)
 E = np.array([1, 0, 0])                      #specify the E vector
 phi = 0
@@ -205,8 +205,13 @@ phi = 0
 # set plane attributes
 p = np.array([0, 0, 0])                     #specify the p point
 N = np.array([0, 0, 1])                     #specify the normal vector
+<<<<<<< HEAD
 n0 = 1
 n1 = 1.50 - 0.2j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
+=======
+U = np.array([1, 0, 0])                     #specify U vector
+n = 1.40 - 0.07j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
+>>>>>>> 670bd8097b6281dfca98b891214e331ee87320ac
                                             #if n > 1, no TIR, if n < 1, TIR might happen
                                             #always assuming the incidental ni = 1
 Num = 1001                                      #size of the image to evaluate
