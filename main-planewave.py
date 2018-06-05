@@ -174,7 +174,7 @@ def singleSurface(pw, P):
 
 # set plane wave attributes
 l = 4                                        #specify the wavelength
-kDir = np.array([0, -1, -1])                   #specify the k-vector direction
+kDir = np.array([0, -4, -1])                   #specify the k-vector direction
 kDir = kDir / np.linalg.norm(kDir)
 E = np.array([1, 0, 0])                      #specify the E vector
 phi = 0
@@ -183,7 +183,7 @@ phi = 0
 O = np.array([0, 0, 0])                     #specify the P point
 N = np.array([0, 0, 1])                     #specify the normal vector
 U = np.array([1, 0, 0])                     #specify U vector
-n = 1.90 - 0.7j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
+n = 1.40 - 0.07j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
                                             #if n > 1, no TIR, if n < 1, TIR might happen
                                             #always assuming the incidental ni = 1
 
