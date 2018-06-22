@@ -7,8 +7,8 @@ Created on Sat May 26 15:26:59 2018
 
 import numpy as np
 import math
-from mpl_toolkits.mplot3d import axes3d
-from matplotlib import pyplot as plt
+#from mpl_toolkits.mplot3d import axes3d
+#from matplotlib import pyplot as plt
 
 class boundary:
     #define the interface to which the plane wave is hitting
@@ -37,7 +37,7 @@ class boundary:
         return self.face(rv)
     
     def perpendicular(self, v):             #calculate the component of v that is perpendicular to the plane
-        return N * np.dot(N, v)
+        return self.N * np.dot(self.N, v)
     
     def parallel(self, v):                  #compute the projection of v in the plane
         return v - self.perpendicular(v)
@@ -132,6 +132,7 @@ class boundary:
         
         return [planewave(kr, Er*np.exp(phase_r * 1j)), planewave(kt, Et*np.exp(phase_t * 1j))]
     
+    #evaluate the reflected and transmitted wave passed through the boundary
     def evaluate(self, X, Y, Z, pw):
         
         #calculate the reflected and transmitted waves
@@ -193,46 +194,4 @@ class planewave():
         Ef = self.E.reshape((3, 1, 1)) * ex
 #        decay = np.exp( - k_dot_d)                          #decay mask
         return Ef
-    
-
-        
-
-# set plane wave attributes
-l = 4                                        #specify the wavelength
-E = np.array([1, 0, 0])                      #specify the E vector
-
-# set plane attributes
-p = np.array([0, 0, 0])                     #specify the p point
-N = np.array([0, 0, 1])                     #specify the normal vector
-n0 = 1
-n1 = 1.00 - 0.1j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
-Num = 1001                                      #size of the image to evaluate
-
-#create a boundary object
-P = boundary(p, N, n0, n1)
-
-#create mesh grid
-c = np.linspace(-20, 20, Num)
-[Y, Z] = np.meshgrid(c, c)
-X = np.zeros(Z.shape)
-
-kd0 = [0, 0, -1]
-kd1 = [0, -1, -1]
-kd2 = [0, 1, -1]
-Kd = [kd0, kd1, kd2]
-
-#allocatgge space for the field and initialize it to zero
-Fp = np.zeros((3, X.shape[0], X.shape[1]), dtype=np.complex128)
-
-for kd in Kd:
-    #kDir = np.array([0, 0, -1])                   #specify the k-vector direction
-    kDir = kd / np.linalg.norm(kd)
-    k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
-    
-    Ei = planewave(k, E)                           #create a plane wave
-    Fp = Fp + P.evaluate(X, Y, Z, Ei)
-
-#plot the field
-#fig = plt.figure()
-plt.imshow(np.abs(Fp[0, :, :]))
 
