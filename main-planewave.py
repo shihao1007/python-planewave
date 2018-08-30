@@ -9,6 +9,7 @@ import numpy as np
 import math
 from mpl_toolkits.mplot3d import axes3d
 from matplotlib import pyplot as plt
+from pyquaternion import Quaternion
 
 class boundary:
     #define the interface to which the plane wave is hitting
@@ -37,7 +38,7 @@ class boundary:
         return self.face(rv)
     
     def perpendicular(self, v):             #calculate the component of v that is perpendicular to the plane
-        return N * np.dot(N, v)
+        return self.N * np.dot(self.N, v)
     
     def parallel(self, v):                  #compute the projection of v in the plane
         return v - self.perpendicular(v)
@@ -193,8 +194,56 @@ class planewave():
         Ef = self.E.reshape((3, 1, 1)) * ex
 #        decay = np.exp( - k_dot_d)                          #decay mask
         return Ef
-    
 
+
+def focused_beam(NA, NumSample, kd):
+    ### creat a list of planewaves sampled uniformly within NA range
+    # NA: numberical aperture of the lens which planewaves are focused from
+    # NumSample: number of samples(planewaves) along longitudinal and latitudinal axis
+    # kd: center planewave of the focused beam
+
+    CenterKd = [0, 0, -1]                                       #defualt planewave coming in perpendicular to the surface
+    kd = kd / np.linalg.norm(kd)                                #normalize the new planewave
+    r = np.sqrt(CenterKd[0] ** 2 + CenterKd[1] ** 2 + CenterKd[2] ** 2)             #radiance of the hemisphere where the k vectors are sampled from
+    
+    if(kd[0] == CenterKd[0] and kd[1] == CenterKd[1] and kd[2] == CenterKd[2]):     #if new planewave is at the same direction as the default plane wave
+        rotateAxis = CenterKd                                   #set rotation axis as defualt k vector
+        RoAngle = 0                                             #set rotation axis as 0 degrees
+    else:                                                       #if new plane wave is at different direction as the defualt planewave, rotation is needed
+        rotateAxis = np.cross(CenterKd, kd)                     #find a axis which is perpendicular to both vectors to be rotation axis
+        RoAngle = math.asin(kd[2] / r)                          #calculate the rotation angle
+    beamRotate = Quaternion(axis=rotateAxis, angle=RoAngle)     #create a quaternion for rotation
+    
+    Kd = np.zeros((3, NumSample, NumSample))                    #initialize the planewave list
+    scaleFactor = np.zeros((NumSample, NumSample))              #initialize a list of scalefactors which are used to scale down the amplitude of planewaves later on along latitude domain
+    
+    #convert the axis from Cartesian to Spherical
+    if(CenterKd[0] == 0 or CenterKd[1] == 0):                   #if the defualt planewave is at the direction of Z axis
+        theta = 0                                               #set azimuthal angle theta as 0
+    else:
+        theta = math.atan(CenterKd[1] / CenterKd[0])            #if not calculate theta from X and Y coordinates
+    
+    pha = math.acos(CenterKd[2] / r)                            #calculate polar angle pha from Z coordinate
+    
+    phaM = math.asin(NA / n0)                                   #calculate sample range of pha from numerical aperture
+    thetaM = 2* np.pi                                           #set sample range of theta as 2pi
+    phaStep = phaM / NumSample                                  #set longitudinal sample resolution as maximal pha divided by number of samples
+    thetaStep = thetaM / NumSample                              #set latitudinal sample resolution as maximal theta divided by number of samples
+    for i in range(NumSample):                                  #sample along longitudinal (pha) domain
+        for j in range(NumSample):                              #sample along latitudinal (theta) domain
+            KdR = r                                             #sample hemisphere radiance will be all the same as r
+            KdTheta = theta + thetaStep * j                     #sample theta at each step in the sample range
+            KdPha = pha + phaStep * i                           #sample theta at each step in the sample range
+            Kd[0,j,i] = KdR * np.cos(KdTheta) * np.sin(KdPha)   #convert coordinates from spherical to Cartesian
+            Kd[1,j,i] = KdR * np.sin(KdTheta) * np.sin(KdPha)
+            Kd[2,j,i] = KdR * np.cos(KdPha)
+            Kd[:,j,i] = beamRotate.rotate(Kd[:,j,i])            #rotate k vectors by the quaternion generated
+            scaleFactor[j,i] = np.sin(KdPha)                    #calculate the scalefactors by the current polar angle pha
+    
+    Kd = np.reshape(Kd, ((3, NumSample ** 2)))
+    scaleFactor = np.reshape(scaleFactor, ((NumSample ** 2)))   #reshape list of k vectors and scalefactors to an one dimentional list
+    
+    return Kd, scaleFactor
         
 
 # set plane wave attributes
@@ -205,7 +254,7 @@ E = np.array([1, 0, 0])                      #specify the E vector
 p = np.array([0, 0, 0])                     #specify the p point
 N = np.array([0, 0, 1])                     #specify the normal vector
 n0 = 1
-n1 = 1.00 - 0.1j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
+n1 = 1.50 - 0.1j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
 Num = 1001                                      #size of the image to evaluate
 
 #create a boundary object
@@ -217,22 +266,36 @@ c = np.linspace(-20, 20, Num)
 X = np.zeros(Z.shape)
 
 kd0 = [0, 0, -1]
-kd1 = [0, -1, -1]
-kd2 = [0, 1, -1]
-Kd = [kd0, kd1, kd2]
+
+NA = 0.5
+NumSample = 16
+Kd, scaleFactor = focused_beam(NA, NumSample, kd0)
 
 #allocatgge space for the field and initialize it to zero
 Fp = np.zeros((3, X.shape[0], X.shape[1]), dtype=np.complex128)
 
-for kd in Kd:
+for i in range(NumSample ** 2):
     #kDir = np.array([0, 0, -1])                   #specify the k-vector direction
-    kDir = kd / np.linalg.norm(kd)
+    kDir = Kd[:,i] / np.linalg.norm(Kd[:,i])
     k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
     
-    Ei = planewave(k, E)                           #create a plane wave
+    Ei = planewave(k, E * scaleFactor[i])          #create a plane wave
     Fp = Fp + P.evaluate(X, Y, Z, Ei)
 
 #plot the field
-#fig = plt.figure()
+fig = plt.figure()
+
+plt.subplot(311)
 plt.imshow(np.abs(Fp[0, :, :]))
+plt.title('Absolute Value')
+
+plt.subplot(312)
+plt.imshow(np.real(Fp[0, :, :]))
+plt.title('Real Part')
+
+plt.subplot(313)
+plt.imshow(np.imag(Fp[0, :, :]))
+plt.title('Imaginary Part')
+
+plt.suptitle('256 Samples 0 Degrees', fontsize = 15)
 
