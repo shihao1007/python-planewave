@@ -202,7 +202,8 @@ class planewave():
 #        decay = np.exp( - k_dot_d)                          #decay mask
         return Ef
 
-
+#DAVID: rename to account for spherical coordinates so we can make a Monte-Carlo one later
+#DAVID: return a plane wave
 def focused_beam(NA, NumSample, kd):
     ### creat a list of planewaves sampled uniformly within NA range
     # NA: numberical aperture of the lens which planewaves are focused from
@@ -249,7 +250,8 @@ def focused_beam(NA, NumSample, kd):
     
     Kd = np.reshape(Kd, ((3, NumSample ** 2)))
     scaleFactor = np.reshape(scaleFactor, ((NumSample ** 2)))   #reshape list of k vectors and scalefactors to an one dimentional list
-    
+
+#DAVID: bake the scale factor into the plane wave    
     return Kd, scaleFactor
         
 
