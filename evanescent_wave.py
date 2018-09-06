@@ -190,7 +190,7 @@ class boundary:
         mask_tr[int(Z.shape[0]/2):Z.shape[0]] = 1
         
         #apply the masks
-        Fp = (Fi + Fr) * mask_in + Ft * mask_tr
+        Fp = (Fi ) * mask_in + Ft * mask_tr
         
         #return the calculated field
         return Fp
@@ -309,7 +309,7 @@ E = np.array([1, 0, 0])                      #specify the E vector
 p = np.array([0, 0, 0])                      #specify the p point
 N = np.array([0, 0, 1])                      #specify the normal vector
 n0 = 1.0
-n1 = 0.8 - 0.1j                              #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
+n1 = 1.5 - 0.1j                              #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
                               
 kd0 = [0, -1, -1]
 k = kd0/ np.linalg.norm(kd0)

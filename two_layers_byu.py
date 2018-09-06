@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Thu Sep  6 11:18:28 2018
+
+@author: shihao
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Wed Sep  5 10:45:05 2018
 two layers, single planewave
 @author: shihao
@@ -318,7 +325,7 @@ def two_layers(s1, s2, pw, X, Y, Z):
     cos_theta_0 = np.dot(k, -s1.N) / ((np.linalg.norm(k)) * np.linalg.norm(s1.N)) #cos theta in material 0, above first layer
     theta_0 = math.acos(cos_theta_0)
     sin_theta_0 = np.sin(theta_0)
-    sin_theta_1 = (1 / np.real(n1)) * np.sin(theta_0)
+    sin_theta_1 = (np.real(n0) / np.real(n1)) * np.sin(theta_0)
     tir1 = False
     if(sin_theta_1 > 1):
         #total internal reflection happening in 1st layer
@@ -326,9 +333,9 @@ def two_layers(s1, s2, pw, X, Y, Z):
         pass
     else:
         theta_1 = math.asin(sin_theta_1)
-        cos_theta_1 = np.sqrt(1 - sin_theta_1**2)
+        cos_theta_1 = np.cos(theta_1)
     
-    sin_theta_2 = (1 / np.real(n2)) * np.sin(theta_1)
+    sin_theta_2 = (np.real(n0) / np.real(n2)) * np.sin(theta_0)
     tir2 = False
     if(sin_theta_2 > 1):
         #total internal reflection happening in 2nd layer
@@ -336,7 +343,7 @@ def two_layers(s1, s2, pw, X, Y, Z):
         pass
     else:
         theta_2 = math.asin(sin_theta_2)
-        cos_theta_2 = np.sqrt(1 - sin_theta_2**2)
+        cos_theta_2 = np.cos(theta_2)
         
     if(theta_0 == 0):
         #if the incoming light hits the 1st boundary head-on
@@ -370,54 +377,71 @@ def two_layers(s1, s2, pw, X, Y, Z):
             t10s = 2 * sin_theta_0 * cos_theta_1 / (sin_theta_0 * cos_theta_1 + sin_theta_1 * cos_theta_0)
             t10p = 2 * sin_theta_0 * cos_theta_1 / (sin_theta_0 * cos_theta_0 + sin_theta_1 * cos_theta_1)
             
-            r21s = (sin_theta_2 * cos_theta_1 - sin_theta_1 * cos_theta_2) / (sin_theta_2 * cos_theta_1 + sin_theta_1 * cos_theta_2)
-            r21p = (sin_theta_2 * cos_theta_2 - sin_theta_1 * cos_theta_1) / (sin_theta_2 * cos_theta_2 + sin_theta_1 * cos_theta_1)
-            t21s = 2 * sin_theta_2 * cos_theta_1 / (sin_theta_2 * cos_theta_1 + sin_theta_1 * cos_theta_2)
-            t21p = 2 * sin_theta_2 * cos_theta_1 / (sin_theta_2 * cos_theta_2 + sin_theta_1 * cos_theta_1)
+            r12s = (sin_theta_2 * cos_theta_1 - sin_theta_1 * cos_theta_2) / (sin_theta_2 * cos_theta_1 + sin_theta_1 * cos_theta_2)
+            r12p = (sin_theta_2 * cos_theta_2 - sin_theta_1 * cos_theta_1) / (sin_theta_2 * cos_theta_2 + sin_theta_1 * cos_theta_1)
+            t12s = 2 * sin_theta_2 * cos_theta_1 / (sin_theta_2 * cos_theta_1 + sin_theta_1 * cos_theta_2)
+            t12p = 2 * sin_theta_2 * cos_theta_1 / (sin_theta_2 * cos_theta_2 + sin_theta_1 * cos_theta_1)
             
-            kr0 = (yHat * sin_theta_0 - zHat * cos_theta_0) * np.linalg.norm(k) * np.real(n0)
-            kt1 = (yHat * sin_theta_1 + zHat * cos_theta_1) * np.linalg.norm(k) * np.real(n1)
-            kr1 = (yHat * sin_theta_1 - zHat * cos_theta_1) * np.linalg.norm(kt1) * np.real(n1)
-            kt2 = (yHat * sin_theta_2 + zHat * cos_theta_2) * np.linalg.norm(kt1) * np.real(n2)
+            kr0 = (yHat * sin_theta_0 - zHat * cos_theta_0) * np.linalg.norm(k)
+            kt1 = (yHat * sin_theta_1 + zHat * cos_theta_1) * np.linalg.norm(k) * sin_theta_0 / sin_theta_1
+            kr1 = (yHat * sin_theta_1 - zHat * cos_theta_1) * np.linalg.norm(k) * sin_theta_0 / sin_theta_1
+            kt2 = (yHat * sin_theta_2 + zHat * cos_theta_2) * np.linalg.norm(k) * sin_theta_0 / sin_theta_2
             
             #todo: broadcast decay into amplitude, thus amplitude will be a changing map, instead of constant, apply this amplitude map with phase.
             t = -(np.dot(s1.p, s1.N) - ( X * s1.N[0] + Y * s1.N[1] + Z * s1.N[2])) / np.dot( kt1, s1.N)
 #            d = np.exp(-np.imag(n1) * t)
 #            d = np.ones((Z.shape))
             d = 1
-            e = np.sqrt(kt1[0]**2 + kt1[1]**2 + kt1[2]**2) * 5 * cos_theta_1
-            ePlus = np.exp(e * 1j)
-            eMinors = np.exp(-e * 1j)
+            ePlus = np.exp(np.sqrt(kt1[0]**2 + kt1[1]**2 + kt1[2]**2) * 5 * cos_theta_1 * 1j)
+            eMinors = np.exp(-np.sqrt(kt1[0]**2 + kt1[1]**2 + kt1[2]**2) * 5 * cos_theta_1 * 1j)
             
-            #p components of 5 fields together with Ei_p as the incoming field
-            Er0p = Ei_p * r10p + Ei_p * t01p * d * ePlus * r21p * d / (1 - eMinors * t10p * d * r01p * d * ePlus * r21p * d * eMinors * t10p * d)
-            Et2p = Ei_p * t01p * d * ePlus *  t21p * d / (1 - ePlus * r21p * d * r01p * d)
-            Et1p = Ei_p * t01p * d / (1 - ePlus * r21p * r01p * d ** 2)
-            Er1p = Ei_p * t01p * d * ePlus * r21p * d / (1 - ePlus * r21p * d * r01p * d)
+            rsTot = r01s + t01s * ePlus * r12s * ePlus * t10s / (1 - r10s * r12s * ePlus * ePlus)
+            tsTot = t01s * ePlus * t12s / (1 - r10s * r12s * ePlus * ePlus)
+
+            Er0s = rsTot * Ei_s
+            Et2s = tsTot * Ei_s
+            Et1s = Et2s * eMinors / t12s
+            Er1s = Et2s * r12s * ePlus / t12s           
             
-            #s components of 5 fields together with Ei_s as the incoming field
-            Er0s = Ei_s * r10s + Ei_s * t01s * d * ePlus * r21s * d / (1 - eMinors * t10s * d * r01s * d * ePlus * r21s * d * eMinors * t10s * d)
-            Et2s = Ei_s * t01s * d * ePlus *  t21s * d / (1 - ePlus * r21s * d * r01s * d)
-            Et1s = Ei_s * t01s * d / (1 - ePlus * r21s * r01s * d ** 2)
-            Er1s = Ei_s * t01s * d * ePlus * r21s * d / (1 - ePlus * r21s * d * r01s * d)
-#            r0mask = (yHat + zHat) 
+            rpTot = r01p + t01p * ePlus * r12p * ePlus * t10p / (1 - r10p * r12p * ePlus * ePlus)
+            tpTot = t01p * ePlus * t12p / (1 - r10p * r12p * ePlus * ePlus)
+
+            Er0p = rpTot * Ei_p
+            Et2p = tpTot * Ei_p
+            Et1p = Et2p * eMinors / t12p
+            Er1p = Et2p * r12p * ePlus / t12p  
             
+#            Er0s = Ei_s
+#            Et2s = Ei_s
+#            Et1s = Et2s * eMinors / t21s
+#            Er1s = Et2s * r21s * ePlus / t21s 
+#            
+#            Er0p = Ei_p
+#            Et2p = Ei_p
+#            Et1p = Et2p * eMinors / t21p
+#            Er1p = Et2p * r21p * ePlus / t21p  
+            
+#            #p components of 5 fields together with Ei_p as the incoming field
+#            Er0p = Ei_p * r10p + Ei_p * t01p * d * ePlus * r12p * d / (1 - eMinors * t10p * d * r01p * d * ePlus * r12p * d * eMinors * t10p * d)
+#            Et2p = Ei_p * t01p * d * ePlus *  t12p * d / (1 - ePlus * r12p * d * r01p * d)
+#            Et1p = Ei_p * t01p * d / (1 - ePlus * r12p * r01p * d ** 2)
+#            Er1p = Ei_p * t01p * d * ePlus * r12p * d / (1 - ePlus * r12p * d * r01p * d)
+#            
+#            #s components of 5 fields together with Ei_s as the incoming field
+#            Er0s = Ei_s * r10s + Ei_s * t01s * d * ePlus * r12s * d / (1 - eMinors * t10s * d * r01s * d * ePlus * r12s * d * eMinors * t10s * d)
+#            Et2s = Ei_s * t01s * d * ePlus *  t12s * d / (1 - ePlus * r12s * d * r01s * d)
+#            Et1s = Ei_s * t01s * d / (1 - ePlus * r12s * r01s * d ** 2)
+#            Er1s = Ei_s * t01s * d * ePlus * r12s * d / (1 - ePlus * r12s * d * r01s * d)         
+
             Er0 = (yHat * cos_theta_0 + zHat * sin_theta_0) * Er0p + cxHat * Er0s
             Et1 = (yHat * cos_theta_1 - zHat * sin_theta_1) * Et1p + cxHat * Et1s
             Er1 = (yHat * cos_theta_1 + zHat * sin_theta_1) * Er1p + cxHat * Er1s
             Et2 = (yHat * cos_theta_2 - zHat * sin_theta_2) * Et2p + cxHat * Et2s
             
-            phase_r0 = np.dot(s1.p, k - kr0)
-            phase_t1 = np.dot(s1.p, k - kt1)
-#            phase_r1 = np.dot(s2.p, kt1 - kr1)
-            phase_r1 = 0
-#            phase_t2 = np.dot(s2.p, kt1 - kt2)
-            phase_t2 = 0
-            
-            Wr0 = planewave(kr0, Er0 * np.exp(phase_r0 * 1j), tir1, False, sin_theta_0)
-            Wt1 = planewave(kt1, Et1 * np.exp(phase_t1 * 1j), tir1, True, sin_theta_0)
-            Wr1 = planewave(kr1, Er1 * np.exp(-phase_r1 * 1j), tir2, False, sin_theta_1)
-            Wt2 = planewave(kt2, Et2 * np.exp(phase_t2 * 1j), tir2, True, sin_theta_1)
+            Wr0 = planewave(kr0, Er0, tir1, False, sin_theta_0)
+            Wt1 = planewave(kt1, Et1, tir1, True, sin_theta_0)
+            Wr1 = planewave(kr1, Er1, tir2, False, sin_theta_1)
+            Wt2 = planewave(kt2, Et2, tir2, True, sin_theta_1)
             
             Fi0 = pw.evaluate(X, Y, Z)
             Fr0 = Wr0.evaluate(X, Y, Z)
@@ -430,11 +454,11 @@ def two_layers(s1, s2, pw, X, Y, Z):
             mask2 = np.zeros(Z.shape)
             
             mask0[0:int(Z.shape[0] / 2)] = 1
-            mask1[int(Z.shape[0] / 2): int(Z.shape[0] / 2) + int(Z.shape[0] * (s1.p[2] - s2.p[2]) / (max(c) - min(c)))] = 1
-            mask2[int(Z.shape[0] / 2) + int(Z.shape[0] * (s1.p[2] - s2.p[2]) / (max(c) - min(c))) : Z.shape[0]] =1
+            mask1[int(Z.shape[0] / 2): int(Z.shape[0] / 2) + int(Z.shape[0] * (5) / (max(c) - min(c)))] = 1
+            mask2[int(Z.shape[0] / 2) + int(Z.shape[0] * (5) / (max(c) - min(c))) : Z.shape[0]] =1
             
             Fp = (Fi0 + Fr0) * mask0 + (Ft1 + Fr1) * mask1 + Ft2 * mask2
-            
+#            Fp =  + (Ft1 + Fr1) 
             return Fp
             
             
@@ -453,11 +477,11 @@ E = np.array([1, 0, 0])                      #specify the E vector
 
 # set plane attributes
 p1 = np.array([0, 0, 0])                      #specify the p point
-p2 = np.array([0, 0, -5])
+p2 = np.array([0, 0, 0])
 N = np.array([0, 0, 1])                      #specify the normal vector
 n0 = 1.0
 n1 = 1.5 #- 0.1j                              #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
-n2 = 2.0
+n2 = 2
                               
 kd0 = [0, -1, -1]
 k = kd0/ np.linalg.norm(kd0)
