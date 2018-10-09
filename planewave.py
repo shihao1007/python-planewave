@@ -274,7 +274,7 @@ E = np.array([1, 0, 0])                      #specify the E vector
 p = np.array([0, 0, 0])                     #specify the p point
 N = np.array([0, 0, 1])                     #specify the normal vector
 n0 = 1.0
-n1 = 0.8 - 0.1j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
+n1 = 1.0 - 0.0j                                   #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
 Num = 1001                                      #size of the image to evaluate
 
 #create a boundary object
@@ -285,7 +285,7 @@ c = np.linspace(-20, 20, Num)
 [Y, Z] = np.meshgrid(c, c)
 X = np.zeros(Z.shape)
 
-kd0 = [0, 2, -1]
+kd0 = [0, 0, -1]
 k = kd0/ np.linalg.norm(kd0)
 k = k * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
 
@@ -299,17 +299,21 @@ Fs = P.evaluate(X, Y, Z, Ei)
 #plot the field
 fig = plt.figure()
 
-plt.subplot(311)
+plt.subplot(121)
 plt.imshow(np.abs(Fs[0, :, :]))
-plt.title('Absolute Value')
+#plt.colorbar()
+plt.axis('off')
+#plt.title('Absolute Value')
 
-plt.subplot(312)
+plt.subplot(122)
 plt.imshow(np.real(Fs[0, :, :]))
-plt.title('Real Part')
+plt.colorbar()
+plt.axis('off')
+#plt.title('Real Part')
 
-plt.subplot(313)
-plt.imshow(np.imag(Fs[0, :, :]))
-plt.title('Imaginary Part')
+#plt.subplot(313)
+#plt.imshow(np.imag(Fs[0, :, :]))
+#plt.title('Imaginary Part')
 
 #plt.suptitle('256 Samples 0 Degrees', fontsize = 15)
 

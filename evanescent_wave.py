@@ -190,7 +190,7 @@ class boundary:
         mask_tr[int(Z.shape[0]/2):Z.shape[0]] = 1
         
         #apply the masks
-        Fp = (Fi ) * mask_in + Ft * mask_tr
+        Fp = (Fi + Fr) * mask_in + Ft * mask_tr
         
         #return the calculated field
         return Fp
@@ -294,10 +294,10 @@ def focused_planewave_spherical_coordinates(NA, NumSample, kd):
         kDir = Kd[:,i] / np.linalg.norm(Kd[:,i])
         k = kDir * 2 * np.pi / l                 #calculate the k-vector from k direction and wavelength
         
-        Ei = planewave(k, E * scaleFactor[i])          #create a plane wave
+        Ei = planewave(k, E * scaleFactor[i], False, False, 0)          #create a plane wave
         Fp = Fp + P.evaluate(X, Y, Z, Ei)
 
-    return Fp
+    return Fp, Kd
         
 
 
@@ -309,7 +309,7 @@ E = np.array([1, 0, 0])                      #specify the E vector
 p = np.array([0, 0, 0])                      #specify the p point
 N = np.array([0, 0, 1])                      #specify the normal vector
 n0 = 1.0
-n1 = 1.5 - 0.1j                              #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
+n1 = 1.5 - 0.3j                              #n = nt / ni (n0 is the source material(incidental), nt is the material after the interface(transmitted))
                               
 kd0 = [0, -1, -1]
 k = kd0/ np.linalg.norm(kd0)
@@ -324,26 +324,30 @@ c = np.linspace(-20, 20, Num)
 X = np.zeros(Z.shape)
 
 NA = 0.5
-NumSample = 4
-#Fp = focused_planewave_spherical_coordinates(NA, NumSample, kd0)
+NumSample = 16
 
-Ei = planewave(k, E, False, False, 0)        #initialize a planewave with defualt(no total internal reflection and is not transmitted wave) parameters
-Fs = P.evaluate(X, Y, Z, Ei)
+Fp, Kd = focused_planewave_spherical_coordinates(NA, NumSample, kd0)
+
+#Ei = planewave(k, E, False, False, 0)        #initialize a planewave with defualt(no total internal reflection and is not transmitted wave) parameters
+#Fs = P.evaluate(X, Y, Z, Ei)
 
 #plot the field
 fig = plt.figure()
 
-plt.subplot(131)
-plt.imshow(np.abs(Fs[0, :, :]))
-plt.title('Absolute Value')
+#plt.subplot(121)
+plt.imshow(np.abs(Fp[0, :, :]))
+plt.axis('off')
+#plt.title('Absolute Value')
 
-plt.subplot(132)
-plt.imshow(np.real(Fs[0, :, :]))
-plt.title('Real Part')
+#plt.subplot(122)
+#plt.imshow(np.real(Fp[0, :, :]))
+#plt.axis('off')
+plt.colorbar()
+#plt.title('Real Part')
 
-plt.subplot(133)
-plt.imshow(np.imag(Fs[0, :, :]))
-plt.title('Imaginary Part')
+#plt.subplot(133)
+#plt.imshow(np.imag(Fs[0, :, :]))
+#plt.title('Imaginary Part')
 
 #plt.suptitle('256 Samples 0 Degrees', fontsize = 15)
 
